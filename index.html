@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculator TP & SL</title>
+<style>
+:root{--bg:#08111f;--panel:#111d30;--panel2:#17253b;--text:#edf4ff;--muted:#9eb0c9;--accent:#42d392;--blue:#55a8ff;--red:#ff6b7a;--amber:#ffc857;--line:#2b3c55}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#07101d,#0d1930);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:24px clamp(16px,4vw,42px);border-bottom:1px solid var(--line);background:rgba(8,17,31,.88);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+h1{font-size:clamp(24px,4vw,36px);margin:0 0 4px}.sub{color:var(--muted)}main{max-width:1500px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:20px}
+.card{background:rgba(17,29,48,.96);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 14px 40px #0004}h2{font-size:19px;margin:0 0 14px}h3{font-size:15px;margin:18px 0 8px;color:#cfe0f5}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}input,select,button{width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1627;color:var(--text);padding:10px 11px;font:inherit}
+input:focus,select:focus{outline:2px solid #55a8ff77;border-color:var(--blue)}button{cursor:pointer;background:var(--panel2);font-weight:700}button:hover{border-color:var(--blue)}button.primary{background:linear-gradient(135deg,#1479df,#26a5e4);border:0}button.good{background:#137653;border:0}button.warn{background:#705617;border:0}
+.row{display:flex;gap:9px;align-items:center}.row>*{flex:1}.upload{border:2px dashed #405675;border-radius:14px;padding:16px;text-align:center;background:#0a1525;margin-bottom:12px}
+#chartWrap{position:relative;overflow:auto;max-height:70vh;border-radius:12px;background:#050a12;border:1px solid var(--line)}
+canvas{display:block;max-width:100%;height:auto;margin:auto;cursor:crosshair}.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0}.tools button{font-size:12px;padding:8px 4px}
+.help,.notice{color:var(--muted);font-size:13px}.notice{padding:10px 12px;border-left:3px solid var(--amber);background:#ffc85712;border-radius:7px;margin:10px 0}
+.output{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.metric{background:#0a1525;border:1px solid var(--line);border-radius:12px;padding:12px}.metric b{display:block;font-size:20px;margin-top:3px}.green{color:var(--accent)}.red{color:var(--red)}.amber{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:8px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}.checks label{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--text);margin:8px 0}.checks input{width:auto;margin-top:3px}
+#verdict{padding:14px;border-radius:12px;font-weight:800;text-align:center;margin:12px 0}.eligible{background:#42d39222;border:1px solid var(--accent);color:#8df0c1}.watch{background:#ffc8571c;border:1px solid var(--amber);color:#ffe19a}.blocked{background:#ff6b7a1c;border:1px solid var(--red);color:#ff9ca6}
+details{margin-top:12px}summary{cursor:pointer;color:#cfe0f5;font-weight:700}.footer{color:var(--muted);font-size:12px;margin-top:14px}
+@media(max-width:980px){main{grid-template-columns:1fr}.grid3{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){main{padding:10px}.grid,.grid3{grid-template-columns:1fr}.tools{grid-template-columns:repeat(2,1fr)}header{position:static}.output{grid-template-columns:1fr}}
+@media print{header,.upload,.tools,.actions,#chartWrap{display:none!important}body{background:white;color:#111}.card{box-shadow:none;border:1px solid #bbb;background:white}.metric{background:white;color:#111}}
+</style>
+</head>
+<body>
+<header><h1>Calculator TP & SL</h1><div class="sub">Fibonacci • invalidare tehnică • ATR • risc/recompensă net • dimensionare</div></header>
+<main>
+<section>
+<div class="card">
+<h2>1. Captura și calibrarea graficului</h2>
+<div class="upload">
+<input id="imageInput" type="file" accept="image/*">
+<div class="help">Imaginea rămâne exclusiv în browser. După încărcare, calibrează axa folosind două prețuri vizibile.</div>
+</div>
+<div class="grid">
+<div><label>Preț punct A</label><input id="priceA" type="number" step="any" placeholder="ex. 101.60"></div>
+<div><label>Preț punct B</label><input id="priceB" type="number" step="any" placeholder="ex. 97.50"></div>
+</div>
+<div class="tools">
+<button data-mode="a">Marchează A</button><button data-mode="b">Marchează B</button>
+<button data-mode="high">Swing High</button><button data-mode="low">Swing Low</button><button data-mode="entry">Intrare</button>
+</div>
+<div id="chartWrap"><canvas id="canvas" width="1000" height="520"></canvas></div>
+<div id="modeText" class="notice">Încarcă o imagine sau introdu manual valorile în secțiunea următoare.</div>
+</div>
+
+<div class="card" style="margin-top:20px">
+<h2>2. Datele tranzacției</h2>
+<div class="grid grid3">
+<div><label>Instrument</label><input id="symbol" value="USDIDX"></div>
+<div><label>Timeframe</label><select id="timeframe"><option>M15</option><option>H1</option><option>H4</option><option selected>D1</option><option>W1</option></select></div>
+<div><label>Direcție</label><select id="direction"><option value="long">BUY LONG</option><option value="short" selected>SELL SHORT</option></select></div>
+<div><label>Intrare</label><input id="entry" type="number" step="any" value="99.25"></div>
+<div><label>Swing High</label><input id="swingHigh" type="number" step="any" value="101.60"></div>
+<div><label>Swing Low</label><input id="swingLow" type="number" step="any" value="97.50"></div>
+<div><label>Țintă tehnică opțională</label><input id="technicalTarget" type="number" step="any" placeholder="suport/rezistență reală"></div>
+<div><label>ATR (aceeași unitate ca prețul)</label><input id="atr" type="number" step="any" placeholder="ex. 0.55"></div>
+<div><label>Multiplicator ATR</label><input id="atrMult" type="number" step="0.1" value="0.5"></div>
+<div><label>Tampon minim peste swing</label><input id="buffer" type="number" step="any" value="0.10"></div>
+<div><label>Raport R:R minim</label><input id="rrMin" type="number" step="0.1" value="2"></div>
+<div><label>Extensie Fibonacci</label><select id="fibExt"><option value="1.272">1,272</option><option value="1.618" selected>1,618</option><option value="2">2,000</option></select></div>
+</div>
+<h3>Costuri și specificația contractului</h3>
+<div class="grid grid3">
+<div><label>Spread în unități de preț</label><input id="spread" type="number" step="any" value="0.04"></div>
+<div><label>Slippage estimat / sens</label><input id="slippage" type="number" step="any" value="0.02"></div>
+<div><label>Comision tur-retur / lot</label><input id="commission" type="number" step="any" value="0"></div>
+<div><label>Unități instrument / lot</label><input id="contractSize" type="number" step="any" value="100"></div>
+<div><label>Conversie în RON pentru 1 unitate valutară</label><input id="fx" type="number" step="any" value="4.50"></div>
+<div><label>Levier (ex. 20 pentru 1:20)</label><input id="leverage" type="number" step="1" value="20"></div>
+<div><label>Lot minim</label><input id="minLot" type="number" step="any" value="0.01"></div>
+<div><label>Pas lot</label><input id="lotStep" type="number" step="any" value="0.01"></div>
+<div><label>Capital / equity RON</label><input id="equity" type="number" step="any" value="1178.15"></div>
+<div><label>Risc prudent %</label><input id="riskLow" type="number" step="0.1" value="2"></div>
+<div><label>Risc agresiv %</label><input id="riskHigh" type="number" step="0.1" value="20"></div>
+</div>
+<div class="notice">Contract size, cursul valutar, spreadul și pasul minim trebuie confirmate în platformă. Valorile implicite sunt exemple, nu specificații XTB garantate.</div>
+<button id="calculate" class="primary">Calculează și validează</button>
+</div>
+</section>
+
+<aside>
+<div class="card">
+<h2>3. Rezultatul calculului</h2>
+<div id="verdict" class="watch">DE URMĂRIT — completează și confirmă datele</div>
+<div class="output">
+<div class="metric"><span>Stop Loss tehnic</span><b id="slOut">—</b></div>
+<div class="metric"><span>Take Profit selectat</span><b id="tpOut">—</b></div>
+<div class="metric"><span>Risc / lot, net</span><b id="riskLotOut">—</b></div>
+<div class="metric"><span>Profit / lot, net</span><b id="profitLotOut">—</b></div>
+<div class="metric"><span>R:R net</span><b id="rrOut">—</b></div>
+<div class="metric"><span>TP minim pentru R:R</span><b id="tpRROut">—</b></div>
+</div>
+<h3>Fibonacci</h3>
+<table><thead><tr><th>Nivel</th><th>Preț</th></tr></thead><tbody id="fibTable"></tbody></table>
+<h3>Dimensionare alternativă, neaditivă</h3>
+<table><thead><tr><th>Risc</th><th>Buget</th><th>Loturi</th><th>Marjă</th><th>P/L la TP</th></tr></thead><tbody id="sizeTable"></tbody></table>
+
+<h3>Checklist obligatoriu</h3>
+<div class="checks">
+<label><input id="cData" type="checkbox"> Am confirmat manual prețurile citite din imagine.</label>
+<label><input id="cStructure" type="checkbox"> Swing-ul ales reprezintă invalidarea reală a ideii.</label>
+<label><input id="cMarket" type="checkbox"> Piața este deschisă și instrumentul/contractul este corect.</label>
+<label><input id="cEvent" type="checkbox"> Nu există eveniment macro/geopolitic major în următoarele 60 minute.</label>
+<label><input id="cSpecs" type="checkbox"> Contract size, curs, spread, comision, lot minim și pas sunt verificate.</label>
+<label><input id="cPosition" type="checkbox"> Nu există o altă poziție CFD și riscul zilnic disponibil este confirmat.</label>
+</div>
+
+<details><summary>De ce a ales aplicația aceste niveluri?</summary><div id="explanation" class="help" style="margin-top:8px">Calculează pentru explicație.</div></details>
+<div class="row actions" style="margin-top:14px"><button id="exportBtn">Export JSON</button><button onclick="window.print()">Tipărește / PDF</button></div>
+<div class="footer">Instrument educațional. Nu interpretează știrile, lichiditatea reală sau probabilitatea de atingere a TP înaintea SL. Un SL nu garantează pierderea maximă în caz de gap.</div>
+</div>
+</aside>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$("canvas"),ctx=canvas.getContext("2d");
+let img=null,mode=null,points={a:null,b:null,high:null,low:null,entry:null},lastResult=null;
+function num(id){const v=parseFloat($(id).value);return Number.isFinite(v)?v:NaN}
+function fmt(v,d=4){return Number.isFinite(v)?v.toLocaleString("ro-RO",{maximumFractionDigits:d}):"—"}
+function money(v){return Number.isFinite(v)?v.toLocaleString("ro-RO",{style:"currency",currency:"RON",maximumFractionDigits:2}):"—"}
+function setMode(m){mode=m;$("modeText").textContent="Mod activ: "+({a:"clic pe punctul A al axei",b:"clic pe punctul B al axei",high:"clic pe maximul swing",low:"clic pe minimul swing",entry:"clic pe prețul de intrare"}[m]);}
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+$("imageInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f);img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;draw();URL.revokeObjectURL(u)};img.src=u};
+function priceAtY(y){if(!points.a||!points.b)return NaN;const pa=num("priceA"),pb=num("priceB");if(!Number.isFinite(pa)||!Number.isFinite(pb)||points.a.y===points.b.y)return NaN;return pa+(y-points.a.y)*(pb-pa)/(points.b.y-points.a.y)}
+canvas.onclick=e=>{if(!mode)return;const r=canvas.getBoundingClientRect(),p={x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};points[mode]=p;
+if(["high","low","entry"].includes(mode)){const price=priceAtY(p.y);if(Number.isFinite(price))$(mode==="high"?"swingHigh":mode==="low"?"swingLow":"entry").value=price.toFixed(5)}
+draw();$("modeText").textContent="Punct salvat. Selectează următorul reper sau calculează.";mode=null};
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);if(img)ctx.drawImage(img,0,0);else{ctx.fillStyle="#07101d";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#9eb0c9";ctx.font="26px system-ui";ctx.textAlign="center";ctx.fillText("Încarcă o captură de grafic",canvas.width/2,canvas.height/2)}
+const colors={a:"#ffc857",b:"#ffc857",high:"#ff6b7a",low:"#42d392",entry:"#55a8ff"},names={a:"A",b:"B",high:"HIGH",low:"LOW",entry:"ENTRY"};
+Object.entries(points).forEach(([k,p])=>{if(!p)return;ctx.strokeStyle=colors[k];ctx.fillStyle=colors[k];ctx.lineWidth=Math.max(2,canvas.width/700);ctx.beginPath();ctx.moveTo(0,p.y);ctx.lineTo(canvas.width,p.y);ctx.stroke();ctx.beginPath();ctx.arc(p.x,p.y,7,0,Math.PI*2);ctx.fill();ctx.font=Math.max(13,canvas.width/70)+"px system-ui";ctx.textAlign="left";ctx.fillText(names[k],Math.min(p.x+10,canvas.width-80),Math.max(20,p.y-8))})}
+function roundDown(v,step){if(!Number.isFinite(v)||!Number.isFinite(step)||step<=0)return NaN;return Math.floor((v+1e-12)/step)*step}
+function calculate(){
+const d=$("direction").value,entry=num("entry"),hi=num("swingHigh"),lo=num("swingLow"),atr=num("atr"),atrM=num("atrMult"),buffer=num("buffer"),rrMin=num("rrMin");
+const spread=num("spread")||0,slip=num("slippage")||0,commission=num("commission")||0,cs=num("contractSize"),fx=num("fx"),lev=num("leverage"),eq=num("equity"),minLot=num("minLot"),step=num("lotStep");
+const tech=num("technicalTarget"),range=hi-lo,atrBuffer=Number.isFinite(atr)?atr*atrM:0,pad=Math.max(buffer||0,atrBuffer||0);
+const sl=d==="long"?lo-pad:hi+pad,riskDist=d==="long"?entry-sl:sl-entry;
+const priceCost=spread+2*slip+(Number.isFinite(cs)&&Number.isFinite(fx)&&cs*fx>0?commission/(cs*fx):0);
+const rewardNeeded=rrMin*riskDist+(rrMin+1)*priceCost;
+const tpRR=d==="long"?entry+rewardNeeded:entry-rewardNeeded;
+const ext=num("fibExt"),fibTarget=d==="long"?lo+ext*range:hi-ext*range;
+const tp=Number.isFinite(tech)?tech:tpRR;
+const rewardDist=d==="long"?tp-entry:entry-tp;
+const valuePerPriceLot=cs*fx,costLot=(spread+2*slip)*valuePerPriceLot+commission;
+const riskLot=riskDist*valuePerPriceLot+costLot,profitLot=rewardDist*valuePerPriceLot-costLot,rr=profitLot/riskLot;
+const fibs=[0,.236,.382,.5,.618,.786,1,1.272,1.618,2];
+$("fibTable").innerHTML=fibs.map(p=>"<tr><td>"+(p*100).toLocaleString("ro-RO")+"%</td><td>"+fmt(lo+p*range,5)+"</td></tr>").join("");
+$("slOut").textContent=fmt(sl,5);$("tpOut").textContent=fmt(tp,5);$("riskLotOut").textContent=money(riskLot);$("profitLotOut").textContent=money(profitLot);$("rrOut").textContent=fmt(rr,2)+":1";$("tpRROut").textContent=fmt(tpRR,5);
+const rows=[num("riskLow"),num("riskHigh")].map(p=>{const budget=eq*p/100,raw=budget/riskLot,lots=roundDown(raw,step),validLot=lots>=minLot?lots:0,margin=entry*cs*validLot*fx/lev,pnl=profitLot*validLot;return{p,budget,lots:validLot,margin,pnl}});
+$("sizeTable").innerHTML=rows.map(r=>"<tr><td>"+fmt(r.p,1)+"%</td><td>"+money(r.budget)+"</td><td>"+fmt(r.lots,4)+"</td><td>"+money(r.margin)+"</td><td>"+money(r.pnl)+"</td></tr>").join("");
+const reasons=[];if(!(hi>lo))reasons.push("Swing High trebuie să fie peste Swing Low.");if(!(riskDist>0))reasons.push("Stopul rezultat este pe partea greșită a intrării.");if(!(rewardDist>0))reasons.push("Ținta este pe partea greșită a intrării.");if(!Number.isFinite(atr))reasons.push("ATR lipsește; s-a folosit numai tamponul minim.");if(!(rr>=rrMin))reasons.push("R:R net este sub pragul ales.");if(rows.some(r=>r.lots===0))reasons.push("Pentru cel puțin un plafon, lotul minim depășește riscul permis.");
+const checks=["cData","cStructure","cMarket","cEvent","cSpecs","cPosition"].every(id=>$(id).checked);
+const hardOk=reasons.filter(x=>!/ATR lipsește|cel puțin un plafon/.test(x)).length===0;
+const verdict=$("verdict");if(hardOk&&checks){verdict.className="eligible";verdict.textContent="ELIGIBIL CONDIȚIONAT — verifică ordinul în platformă"}else if(hardOk){verdict.className="watch";verdict.textContent="DE URMĂRIT — calculele sunt valide, checklistul nu este complet"}else{verdict.className="blocked";verdict.textContent="NEELIGIBIL — există erori de structură sau risc"}
+$("explanation").innerHTML=(d==="long"?"Pentru LONG, SL este sub Swing Low.":"Pentru SHORT, SL este peste Swing High.")+" Tamponul utilizat este maximul dintre tamponul manual ("+fmt(buffer,5)+") și ATR × multiplicator ("+fmt(atrBuffer,5)+"), adică "+fmt(pad,5)+". Costul estimat tur-retur, exprimat ca mișcare de preț, este "+fmt(priceCost,5)+". TP minim pentru "+fmt(rrMin,1)+"R include acest cost. "+(Number.isFinite(tech)?"A fost folosită ținta tehnică introdusă manual.":"În lipsa unei ținte tehnice, a fost folosit TP-ul minim pentru R:R.")+" Reperul Fibonacci "+fmt(ext,3)+" este "+fmt(fibTarget,5)+".<br><br>"+(reasons.length?"Avertismente: "+reasons.join(" "):"Nu au fost detectate erori aritmetice.");
+lastResult={createdAt:new Date().toISOString(),symbol:$("symbol").value,timeframe:$("timeframe").value,direction:d,entry,hi,lo,atr,pad,sl,tp,tpRR,fibTarget,rr,riskLot,profitLot,positionSizing:rows,reasons,checklistComplete:checks};
+localStorage.setItem("tpsl-form",JSON.stringify(Object.fromEntries([...document.querySelectorAll("input,select")].filter(x=>x.type!=="file"&&x.type!=="checkbox").map(x=>[x.id,x.value]))));
+}
+$("calculate").onclick=calculate;document.querySelectorAll(".checks input").forEach(x=>x.onchange=calculate);
+$("exportBtn").onclick=()=>{if(!lastResult)calculate();const blob=new Blob([JSON.stringify(lastResult,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="analiza-tp-sl-"+Date.now()+".json";a.click();URL.revokeObjectURL(a.href)};
+try{const saved=JSON.parse(localStorage.getItem("tpsl-form")||"{}");Object.entries(saved).forEach(([k,v])=>{if($(k))$(k).value=v})}catch(e){}
+calculate();
+</script>
+</body>
+</html>
