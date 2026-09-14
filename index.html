@@ -2,11 +2,11 @@
 <html lang="ro">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220">
 <title>TP/SL Studio · Analiză automată</title>
-<link rel="stylesheet" href="./styles.css?v=2.0.0">
-<script defer src="./engine.js?v=2.0.0"></script><script defer src="./vision.js?v=2.0.0"></script><script defer src="./app.js?v=2.0.0"></script>
+<link rel="stylesheet" href="./styles.css?v=3.0.0">
+<script defer src="./engine.js?v=3.0.0"></script><script defer src="./vision.js?v=3.0.0"></script><script defer src="./app.js?v=3.0.0"></script>
 </head>
 <body>
-<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v2 · analiză automată</span></header>
+<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3 · analiză din 3 capturi</span></header>
 <main>
 <section class="intro"><p class="eyebrow">DE LA GRAFIC LA UN PLAN EXPLICAT</p><h1>Direcția se citește.<br><span>Riscul se calculează.</span></h1><p>Încarcă lumânările. Aplicația propune <strong>BUY LONG</strong>, <strong>SELL SHORT</strong> sau <strong>FĂRĂ SETUP</strong> și explică fiecare nivel.</p><div class="pills"><span>Fără cont</span><span>Poza rămâne în browser</span><span>Nu plasează ordine</span></div></section>
 <div class="layout">
@@ -14,7 +14,14 @@
 <section class="card">
 <div class="section-title"><span class="step">01</span><h2>Graficul tău</h2></div>
 <div class="grid"><label>Instrument<input id="symbol" placeholder="Ex. OIL / GOLD / USDIDX" maxlength="40"></label><label>O lumânare reprezintă<select id="timeframe"><option value="">Alege intervalul</option><option>M15</option><option>H1</option><option>H4</option><option>D1</option><option>Alt interval</option></select></label></div>
-<div class="upload"><label for="imageInput">Adaugă o captură cu lumânări roșii și verzi</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, WebP · maximum 15 MB. Selectează lumânări standard, fără Heikin-Ashi, Renko sau grafic liniar.</small></div>
+<div class="upload"><label for="imageInput">Adaugă 1–3 capturi din aceeași situație XTB</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Ideal: ① grafic pe ecran complet, ② ordin cu BUY/SELL, volum și marjă, ③ detalii extinse cu spread, contract, swap și valoare pip. Maximum 15 MB/poză.</small></div>
+<div id="photoList" class="photo-list" aria-live="polite"></div>
+<button id="scanAllBtn" class="primary wide" type="button">Preia automat datele din toate fotografiile <span>→</span></button>
+<div id="extractedWrap" hidden>
+<h3>Date extrase și reconciliate</h3>
+<div class="table-scroll"><table><thead><tr><th>Câmp</th><th>Valoare folosită</th><th>Surse / verificare</th></tr></thead><tbody id="extracted"></tbody></table></div>
+<p id="reconcileStatus" class="notice"></p>
+</div>
 <div class="row"><label class="file-secondary">sau importă OHLC din CSV<input id="csvInput" type="file" accept=".csv,text/csv"></label><button id="demoBtn" type="button" class="secondary">Încearcă demonstrația</button></div>
 <p id="sourceStatus" class="notice" role="status">Niciun grafic încărcat. Datele demonstrative sunt sintetice.</p>
 <details open class="lesson"><summary>A, B, swing low și swing high — ce înseamnă?</summary>
@@ -25,7 +32,7 @@
 </details>
 <div id="photoControls">
 <div class="row tools"><button id="regionBtn">1. Selectează panoul</button><button id="ocrBtn">2. Citește axa automat</button></div>
-<p class="hint">Atinge colțul stânga-sus și apoi dreapta-jos al panoului de preț. Lasă cifrele axei în dreapta selecției; exclude volumul, RSI și MACD.</p>
+<p class="hint">Aplicația încearcă întâi să găsească singură panoul și axa. Dacă nu reușește, atinge colțul stânga-sus și apoi dreapta-jos al panoului de preț. Lasă cifrele axei în dreapta selecției; exclude volumul, RSI și MACD.</p>
 <div class="row tools"><button id="markA">Reper A pe poză</button><button id="markB">Reper B pe poză</button><button id="clearBtn">Resetează reperele</button></div>
 <div class="grid"><label>Preț la A<input id="priceA" inputmode="decimal" placeholder="Ex. 105,00"></label><label>Preț la B<input id="priceB" inputmode="decimal" placeholder="Ex. 100,00"></label></div>
 <label>Tipul axei prețului<select id="scale"><option value="linear">Liniară</option><option value="log">Logaritmică</option></select></label>
@@ -38,7 +45,10 @@
 <label class="check"><input id="dataConfirmed" type="checkbox">Am verificat prețurile, cronologia, intervalul și toate corpurile/umbrele marcate; sunt lumânări standard consecutive.</label>
 <div class="grid"><label>Pas minim al prețului (tick)<input id="tick" inputmode="decimal" placeholder="Verifică în platformă"></label><label>Data ultimei lumânări din sursă<input id="asOf" type="datetime-local"></label></div>
 <button id="analyzeBtn" class="primary wide">Generează recomandarea automată <span>→</span></button>
-<p class="hint">Pentru o fotografie neclară, analiza se oprește. CSV: <code>time,open,high,low,close</code>, vechi → nou; minimum 60 de lumânări închise. Indicatorii folosesc numai datele importate, pe intervalul selectat.</p>
+<p class="hint">Pentru o fotografie neclară, analiza se oprește. CSV: <code>time,open,high,low,close</code>, vechi → nou. Din fotografie sunt necesare minimum 35 de lumânări închise pentru un scenariu provizoriu; EMA50 cere cel puțin 50. Indicatorii folosesc numai datele importate, pe intervalul selectat.</p>
+<details><summary>Statistică istorică opțională — când putem spune „probabilitate”?</summary>
+<p>Numai un CSV cu cel puțin 1.200 de lumânări poate produce o estimare empirică. Aplicația rezervă ultima jumătate a seriei, rulează cronologic fără a folosi lumânări viitoare la formarea semnalului și numără TP, SL și expirările după 12 lumânări. Sunt necesare minimum 30 de tranzacții activate. Afișează rata TP și intervalul Wilson 95%, plus rezultatul mediu în R; fotografiile singure produc doar un scor de calitate, nu o probabilitate.</p>
+</details>
 </section>
 <section class="card">
 <div class="section-title"><span class="step">02</span><h2>Costuri și capital</h2></div>
@@ -55,7 +65,7 @@
 <label>Volum minim, lot<input id="minLot" inputmode="decimal" placeholder="Din specificații"></label>
 <label>Pas volum, lot<input id="lotStep" inputmode="decimal" placeholder="Din specificații"></label>
 <label>Pierderi azi + risc deja angajat, RON<input id="dailyUsed" inputmode="decimal" placeholder="Necunoscut → fără dimensionare"></label>
-<label>Poziție CFD deja deschisă?<select id="position"><option value="unknown">Statut necunoscut</option value="yes">Da</option><option value="no">Nu, am verificat</option></select></label>
+<label>Poziție CFD deja deschisă?<select id="position"><option value="unknown">Statut necunoscut</option><option value="yes">Da / detectată în capturi</option><option value="no">Nu, am verificat</option></select></label>
 <label>Eveniment major în următoarele 60 min?<select id="event"><option value="unknown">Calendar neverificat</option><option value="yes">Da / risc activ</option><option value="no">Nu, am verificat</option></select></label>
 <label>Piața și tranzacționarea instrumentului<select id="market"><option value="unknown">Neverificate</option><option value="open">Deschise, produs disponibil</option><option value="closed">Închise / indisponibil</option></select></label>
 </div>
@@ -80,6 +90,8 @@
 <ul id="reasons" class="reasons"></ul>
 <p id="blockers" class="notice">O recomandare tehnică nu este o probabilitate de profit.</p>
 <dl class="indicators" id="indicators"></dl>
+<div id="qualityBox" class="quality-box"><span>Calitatea dovezilor</span><strong id="qualityOut">—</strong><div class="quality-track"><i id="qualityBar"></i></div><small id="qualityDetail">Nu este probabilitate de profit.</small></div>
+<div id="statsBox" class="stats-box"><h3>Estimare istorică</h3><p id="statsOut" class="hint">Indisponibilă din fotografii. Importă istoric CSV suficient.</p></div>
 <details><summary>Fibonacci și ținta necesară pentru 2R</summary><div id="fibo"></div><p id="requiredTarget" class="hint">Ținta 2R este un calcul de rentabilitate, nu dovada că prețul poate ajunge acolo.</p></details>
 <div class="divider"></div>
 <h3>Dimensionare simulată</h3><p class="hint">Lotajele sunt calcule ipotetice, nu ordine. Volum recomandat pentru execuție: <b>0</b>.</p>
@@ -96,6 +108,6 @@
 </section>
 </aside>
 </div>
-<footer>TP/SL Studio · 2.0.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
+<footer>TP/SL Studio · 3.0.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
 </main>
 </body></html>
