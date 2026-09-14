@@ -1,19 +1,15 @@
 name: Publică aplicația web
-
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: "pages"
   cancel-in-progress: true
-
 jobs:
   deploy:
     environment:
@@ -23,14 +19,41 @@ jobs:
     steps:
       - name: Descarcă sursa
         uses: actions/checkout@v4
+      - name: Node pentru verificări
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalează browserul pentru verificare
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Verifică formulele și interfața
+        run: npm test
+      - name: Captură de verificare mobil
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verificare-mobil
+          path: qa-mobile.png
+          if-no-files-found: ignore
       - name: Configurează GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Pregătește fișierele publice
+        run: |
+          mkdir -p public
+          cp index.html styles.css engine.js vision.js app.js public/
       - name: Pregătește site-ul
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "."
+          path: public
       - name: Publică
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verifică versiunea publicată
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --retry 5 --retry-all-errors --retry-delay 4 "$SITE_URL?version=$GITHUB_SHA" -o /tmp/tpsl-live.html
+          node -e "const fs=require('fs');if(!fs.readFileSync('/tmp/tpsl-live.html','utf8').includes('2.0.0'))process.exit(1)"
