@@ -1,4 +1,4 @@
-/* TP/SL Studio v3 — deterministic calculations; no orders or market feed. */
+/* TP/SL Studio v3.3 — bilateral LONG/SHORT comparison; no orders or market feed. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TP=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -16,28 +16,59 @@ function rsi(values,n=14){const out=Array(values.length).fill(null);if(values.le
 function pivots(bars,r=2){const highs=[],lows=[];for(let i=r;i<bars.length-r;i++){let hi=true,lo=true;for(let j=i-r;j<=i+r;j++){if(j===i)continue;if(bars[j].high>=bars[i].high)hi=false;if(bars[j].low<=bars[i].low)lo=false;}if(hi)highs.push({i,price:bars[i].high});if(lo)lows.push({i,price:bars[i].low});}return {highs,lows};}
 function indicators(bars){const c=bars.map(b=>b.close),e20=ema(c,20),e50=ema(c,50),a=atr(bars),r=rsi(c),e12=ema(c,12),e26=ema(c,26),m=c.map((_,i)=>e26[i]===null?null:e12[i]-e26[i]),validMacd=m.filter(finite),signal=ema(validMacd,9),last=bars.length-1;return {ema20:e20[last],ema50:e50[last],slope20:e20[last]-e20[last-5],atr14:a[last],rsi14:r[last],macd:m[last],macdSignal:signal.at(-1)??null};}
 function snap(v,t,up){return round((up?Math.ceil(v/t-1e-9):Math.floor(v/t+1e-9))*t,10);}
+function trendEvidence(direction,highs,lows,ind,last){
+ const sign=direction==='LONG'?1:-1,tol=ind.atr14*.06,full=finite(ind.ema50),checks=[
+  {key:'highs',label:direction==='LONG'?'maxime locale în urcare':'maxime locale în coborâre',available:highs.length>=2,pass:highs.length>=2&&sign*(highs.at(-1).price-highs.at(-2).price)>tol,weight:22},
+  {key:'lows',label:direction==='LONG'?'minime locale în urcare':'minime locale în coborâre',available:lows.length>=2,pass:lows.length>=2&&sign*(lows.at(-1).price-lows.at(-2).price)>tol,weight:22},
+  {key:'priceEma20',label:direction==='LONG'?'preț peste EMA20':'preț sub EMA20',available:finite(ind.ema20),pass:finite(ind.ema20)&&sign*(last.close-ind.ema20)>0,weight:18},
+  {key:'slopeEma20',label:direction==='LONG'?'EMA20 în urcare':'EMA20 în coborâre',available:finite(ind.slope20),pass:finite(ind.slope20)&&sign*ind.slope20>0,weight:18},
+  {key:'emaStack',label:direction==='LONG'?'EMA20 peste EMA50':'EMA20 sub EMA50',available:full,pass:full&&sign*(ind.ema20-ind.ema50)>0,weight:20}
+ ];
+ const available=checks.filter(x=>x.available),passed=available.filter(x=>x.pass),total=available.reduce((s,x)=>s+x.weight,0),earned=passed.reduce((s,x)=>s+x.weight,0),enough=checks.slice(0,4).every(x=>x.available)&&(!full||checks[4].available),aligned=enough&&available.every(x=>x.pass);
+ return {direction,aligned,score:total?Math.round(earned/total*100):0,passed:passed.length,total:available.length,checks};
+}
+function directionalPlan(direction,bars,ind,ps,tick){
+ const bull=direction==='LONG',sign=bull?1:-1,high=ps.highs.at(-1),low=ps.lows.at(-1);
+ if(!high||!low)return {plan:null,error:'Lipsește cel puțin un swing high sau swing low confirmat.'};
+ if(!finite(tick)||tick<=0)return {plan:null,error:'Lipsește pasul minim de preț verificat.'};
+ const pad=Math.max(2*tick,ind.atr14*.25),level=bull?Math.max(high.price,...bars.slice(-3).map(b=>b.high)):Math.min(low.price,...bars.slice(-3).map(b=>b.low)),entry=snap(level+sign*tick,tick,bull),sl=snap((bull?low.price:high.price)-sign*pad,tick,!bull),risk=sign*(entry-sl);
+ if(risk<=0)return {plan:null,error:'Structura nu permite un stop coerent pentru '+direction+'.'};
+ const levels=(bull?ps.highs:ps.lows).map(p=>p.price).filter(p=>sign*(p-entry)>2*tick).sort((a,b)=>sign*(a-b)),tp=levels.length?snap(levels[0]-sign*tick,tick,!bull):null,lo=Math.min(low.price,high.price),hi=Math.max(low.price,high.price),fib=[.236,.382,.5,.618,.786,1].map(p=>({percent:p*100,price:round(bull?hi-(hi-lo)*p:lo+(hi-lo)*p)}));
+ const rawProjection=round(bull?hi+.618*(hi-lo):lo-.618*(hi-lo)),projection1618=sign*(rawProjection-entry)>0?rawProjection:null;
+ const plan={entry,sl,tp,riskDistance:risk,pad,trigger:level,rrGross:tp!==null?sign*(tp-entry)/risk:null,projection1618,fib,swingLow:lo,swingHigh:hi,tick,sourceTarget:tp!==null?'pivot':'missing',projectionRejected:projection1618===null};
+ return {plan,error:null};
+}
 function analyze(input,opts={}){
  const bars=opts.excludeLast?input.slice(0,-1):input.slice(),error=validate(bars,35);
  if(error)return {direction:'NONE',error,reasons:[error],bars,plan:null,quality:0};
  const ind=indicators(bars),ps=pivots(bars),h=ps.highs.slice(-2),l=ps.lows.slice(-2),last=bars.at(-1);
- const base={bars,ind,pivots:ps,plan:null,direction:'NONE',reasons:[],quality:Math.min(25,8+(bars.length-35)*.35)};
- if(h.length<2||l.length<2){base.reasons=['Nu sunt două maxime și două minime locale confirmate.'];return base;}
+ const evidence={LONG:trendEvidence('LONG',ps.highs,ps.lows,ind,last),SHORT:trendEvidence('SHORT',ps.highs,ps.lows,ind,last)},candidates={};
+ for(const direction of ['LONG','SHORT']){const built=directionalPlan(direction,bars,ind,ps,opts.tick);candidates[direction]={direction,...evidence[direction],...built,targetConfirmed:built.plan?.tp!==null};}
+ const base={bars,ind,pivots:ps,candidates,plan:null,direction:'NONE',reasons:[],quality:Math.min(25,8+(bars.length-35)*.35)};
+ if(h.length<2||l.length<2){base.reasons=['Nu sunt două maxime și două minime locale confirmate. Ambele sensuri rămân nevalidate.'];return base;}
  const tol=ind.atr14*.06,hh=h[1].price>h[0].price+tol,hl=l[1].price>l[0].price+tol,lh=h[1].price<h[0].price-tol,ll=l[1].price<l[0].price-tol,full=finite(ind.ema50);
- const bull=hh&&hl&&ind.slope20>0&&last.close>ind.ema20&&(!full||ind.ema20>ind.ema50);
- const bear=lh&&ll&&ind.slope20<0&&last.close<ind.ema20&&(!full||ind.ema20<ind.ema50);
+ const bull=evidence.LONG.aligned,bear=evidence.SHORT.aligned;
  if(!bull&&!bear){base.reasons=['Structura swing-urilor și filtrul de trend nu confirmă aceeași direcție.'];return base;}
  base.direction=bull?'LONG':'SHORT';base.quality+=25+(full?25:10)+(ind.rsi14>=25&&ind.rsi14<=75?10:5);
  base.reasons=[bull?'Ultimele două maxime și minime locale sunt în urcare.':'Ultimele două maxime și minime locale sunt în coborâre.',full?(bull?'Prețul este peste EMA20; EMA20 este peste EMA50 și urcă.':'Prețul este sub EMA20; EMA20 este sub EMA50 și coboară.'):(bull?'EMA20 urcă și prețul este peste ea; EMA50 nu are încă 50 de bare.':'EMA20 coboară și prețul este sub ea; EMA50 nu are încă 50 de bare.'),'Pivoturile sunt confirmate numai după două lumânări ulterioare.'];
  if(!finite(opts.tick)||opts.tick<=0){base.reasons.push('Introdu pasul de preț verificat pentru calculul intrării, SL și TP.');return base;}
- const tick=opts.tick,pad=Math.max(2*tick,ind.atr14*.25),dir=bull?1:-1,level=bull?Math.max(h[1].price,...bars.slice(-3).map(b=>b.high)):Math.min(l[1].price,...bars.slice(-3).map(b=>b.low)),entry=snap(level+dir*tick,tick,bull),sl=snap((bull?l[1].price:h[1].price)-dir*pad,tick,!bull),risk=dir*(entry-sl);
- if(risk<=0){base.direction='NONE';base.reasons=['Structura nu permite un stop coerent.'];base.quality=0;return base;}
- const levels=(bull?ps.highs:ps.lows).map(p=>p.price).filter(p=>dir*(p-entry)>2*tick).sort((a,b)=>dir*(a-b)),tp=levels.length?snap(levels[0]-dir*tick,tick,!bull):null,lo=Math.min(l[1].price,h[1].price),hi=Math.max(l[1].price,h[1].price),fib=[.236,.382,.5,.618,.786,1].map(p=>({percent:p*100,price:round(bull?hi-(hi-lo)*p:lo+(hi-lo)*p)}));
- if(tp)base.quality+=15;
+ const chosen=candidates[base.direction];if(!chosen.plan){base.reasons.push(chosen.error);return base;}const tp=chosen.plan.tp;
+ if(tp!==null)base.quality+=15;
  base.quality=Math.min(100,Math.round(base.quality));
- base.plan={entry,sl,tp,riskDistance:risk,pad,trigger:level,rrGross:tp?dir*(tp-entry)/risk:null,projection1618:round(bull?hi+.618*(hi-lo):lo-.618*(hi-lo)),fib,swingLow:lo,swingHigh:hi,tick,sourceTarget:tp?'pivot':'missing'};
- if(!tp)base.reasons.push('Niciun suport/rezistență istoric din captură dincolo de intrare: TP tehnic neconfirmat.');
+ base.plan=chosen.plan;
+ if(tp===null)base.reasons.push('Niciun suport/rezistență istoric din captură dincolo de intrare: TP tehnic neconfirmat.');
  if(Math.abs(last.close-ind.ema20)>2*ind.atr14)base.reasons.push('Prețul este extins la peste 2 ATR față de EMA20: așteaptă o consolidare.');
  return base;
+}
+function payoff(plan,direction,opts={}){
+ if(!plan||!['LONG','SHORT'].includes(direction))return {error:'Lipsește un scenariu tehnic complet.'};
+ const target=opts.target??plan.tp,sign=direction==='LONG'?1:-1,{entry,sl}=plan;
+ if(![entry,sl].every(finite)||sign*(entry-sl)<=0)return {error:'SL trebuie să fie la invalidare, în partea opusă TP.'};
+ if(!finite(target)||target<=0||sign*(target-entry)<=0)return {error:'Lipsește o țintă tehnică validă pe partea corectă a intrării.'};
+ const riskDistance=sign*(entry-sl),rewardDistance=sign*(target-entry),grossRR=rewardDistance/riskDistance,fields=['value','spread','slippage','commission'],hasCosts=fields.every(k=>finite(opts[k]))&&opts.value>0&&opts.spread>=0&&opts.slippage>=0&&opts.commission>=0;
+ if(!hasCosts)return {riskDistance,rewardDistance,grossRR,netAvailable:false,target};
+ const costPrice=(opts.priceBasis==='executable'?0:opts.spread)+opts.slippage+opts.commission/opts.value,netRiskDistance=riskDistance+costPrice,netRewardDistance=rewardDistance-costPrice,rr=netRewardDistance/netRiskDistance;
+ return {riskDistance,rewardDistance,grossRR,costPrice,netRiskDistance,netRewardDistance,rr,netAvailable:true,target};
 }
 function evaluate(plan,direction,opts){
  if(!plan||!['LONG','SHORT'].includes(direction))return {error:'Lipsește un scenariu tehnic complet.'};
@@ -47,7 +78,7 @@ function evaluate(plan,direction,opts){
  const required=['value','spread','slippage','commission','equity','freeMargin','marginPerLot','minLot','lotStep','dailyUsed'];
  if(!required.every(k=>finite(opts[k])))return {error:'Completează costurile, capitalul și specificațiile verificate; câmpurile goale nu înseamnă zero.'};
  if(opts.value<=0||opts.equity<=0||opts.marginPerLot<=0||opts.minLot<=0||opts.lotStep<=0||['spread','slippage','commission','freeMargin','dailyUsed'].some(k=>opts[k]<0))return {error:'Capitalul și specificațiile trebuie să fie pozitive, costurile cel puțin zero.'};
- const riskDist=sign*(entry-sl),costPrice=(opts.priceBasis==='executable'?0:opts.spread)+opts.slippage+opts.commission/opts.value,riskLot=(riskDist+costPrice)*opts.value,rewardLot=tp==null?null:(sign*(tp-entry)-costPrice)*opts.value,rr=rewardLot===null?null:rewardLot/riskLot,rrGoal=2,requiredTP=entry+sign*(rrGoal*riskDist+(rrGoal+1)*costPrice),dailyRemaining=Math.max(0,opts.equity*.2-opts.dailyUsed);
+ const p=payoff(plan,direction,{...opts,target:tp});if(p.error)return p;const riskDist=p.riskDistance,costPrice=p.costPrice,riskLot=p.netRiskDistance*opts.value,rewardLot=p.netRewardDistance*opts.value,rr=p.rr,rrGoal=2,requiredTP=entry+sign*(rrGoal*riskDist+(rrGoal+1)*costPrice),dailyRemaining=Math.max(0,opts.equity*.2-opts.dailyUsed);
  const sizes=[2,20].map(pct=>{const budget=Math.min(opts.equity*pct/100,dailyRemaining),maxLots=Math.min(budget/riskLot,opts.freeMargin/opts.marginPerLot),lots=maxLots+1e-10<opts.minLot?0:round(opts.minLot+Math.floor((maxLots-opts.minLot)/opts.lotStep+1e-9)*opts.lotStep,8);return {pct,budget,lots,loss:lots*riskLot,profit:rewardLot===null?null:lots*rewardLot,margin:lots*opts.marginPerLot,executionVolume:0};});
  return {riskLot,rewardLot,rr,costPrice,requiredTP,sizes,tp,riskDistance:riskDist,rewardDistance:tp==null?null:sign*(tp-entry),dailyRemaining};
 }
@@ -76,5 +107,5 @@ function mapPrice(y,a,b,log=false){if(!a||!b||![a.y,a.price,b.y,b.price,y].every
 function calibrate(raw,a,b,log=false){return raw.map(v=>({open:mapPrice(v.openY,a,b,log),high:mapPrice(v.highY,a,b,log),low:mapPrice(v.lowY,a,b,log),close:mapPrice(v.closeY,a,b,log),x:v.x}));}
 function parseCSV(text){const lines=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(s=>s.trim());if(lines.length<2)throw Error('CSV gol.');const sep=lines[0].includes(';')?';':',',split=s=>s.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')),heads=split(lines[0]).map(s=>s.toLowerCase()),keys=['open','high','low','close'],ix=keys.map(k=>heads.indexOf(k));if(ix.some(i=>i<0))throw Error('CSV necesită coloanele open, high, low, close. Ordine cronologică vechi → nou.');const timeI=heads.findIndex(h=>['time','date','timestamp'].includes(h));let previous=-Infinity;return lines.slice(1).map(line=>{const cells=split(line),b={};keys.forEach((k,j)=>b[k]=num(cells[ix[j]]));if(timeI>=0){const s=cells[timeI],t=/^\d+$/.test(s)?Number(s):Date.parse(s);if(!finite(t)||t<=previous)throw Error('Timestampurile trebuie să fie valide, unice și crescătoare.');previous=t;b.time=s;}return b;});}
 function demo(kind='LONG',length=140){const bars=[];for(let i=0;i<length;i++){const base=100+(kind==='LONG'?i*.11:kind==='SHORT'?-i*.11:0)+Math.sin(i*.43)*1.15,open=base+Math.sin(i*1.7)*.12,close=base+Math.cos(i*1.3)*.17;bars.push({open,close,high:Math.max(open,close)+.28,low:Math.min(open,close)-.28});}return bars;}
-return {num,round,validate,ema,atr,rsi,pivots,indicators,analyze,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
+return {num,round,validate,ema,atr,rsi,pivots,indicators,trendEvidence,directionalPlan,analyze,payoff,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
 });

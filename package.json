@@ -1,6 +1,6 @@
 {
   "name": "tp-sl-studio",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "private": true,
   "description": "Static Romanian 3-screenshot chart, TP/SL and risk study; no order execution",
   "scripts": {

@@ -2,11 +2,11 @@
 <html lang="ro">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220">
 <title>TP/SL Studio · Analiză automată</title>
-<link rel="stylesheet" href="./styles.css?v=3.2.0">
-<script defer src="./engine.js?v=3.2.0"></script><script defer src="./vision.js?v=3.2.0"></script><script defer src="./app.js?v=3.2.0"></script>
+<link rel="stylesheet" href="./styles.css?v=3.3.0">
+<script defer src="./engine.js?v=3.3.0"></script><script defer src="./vision.js?v=3.3.0"></script><script defer src="./app.js?v=3.3.0"></script>
 </head>
 <body>
-<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.2 · analiză multi-captură</span></header>
+<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.3 · compară LONG și SHORT</span></header>
 <main>
 <section class="intro"><p class="eyebrow">DE LA GRAFIC LA UN PLAN EXPLICAT</p><h1>Direcția se citește.<br><span>Riscul se calculează.</span></h1><p>Încarcă lumânările. Aplicația propune <strong>BUY LONG</strong>, <strong>SELL SHORT</strong> sau <strong>FĂRĂ SETUP</strong> și explică fiecare nivel.</p><div class="pills"><span>Fără cont</span><span>Poza rămâne în browser</span><span>Nu plasează ordine</span></div></section>
 <div class="layout">
@@ -71,7 +71,7 @@
 </div>
 <label class="check"><input id="specsConfirmed" type="checkbox">Am verificat specificațiile, costurile și, pentru SHORT pe acțiuni, disponibilitatea vânzării în lipsă pe CFD.</label>
 <label>TP dintr-un nivel tehnic confirmat (opțional)<input id="target" inputmode="decimal" placeholder="Suport/rezistență verificat pe grafic mai larg"></label>
-<label class="check"><input id="targetConfirmed" type="checkbox">Ținta introdusă corespunde unei zone tehnice observate.</label>
+<label class="check"><input id="targetConfirmed" type="checkbox" disabled>Ținta introdusă corespunde unei zone tehnice observate.</label>
 <button id="costBtn" class="secondary wide">Actualizează simularea de risc</button>
 <details><summary>Cum sunt calculate costurile și volumul?</summary><p>Modelul folosește niveluri de referință din grafic, nu prețuri bid/ask executate. Riscul/lot = (distanță SL + spread + slippage total) × valoare RON/lot + costuri tur-retur. Profitul estimat scade aceleași costuri o singură dată. Conversia presupune curs constant.</p><p>Volumul este limitat de buget și marja liberă, apoi rotunjit în jos pe grila volumului minim și a pasului. Alternativa 2% și plafonul 20% sunt independente; nu se adună. Bugetul zilnic rămas scade cu riscul deja angajat.</p></details>
 </section>
@@ -86,6 +86,7 @@
 <div class="metric"><span>Take Profit · reper</span><strong id="tpOut">—</strong><small id="tpKind">—</small></div>
 <div class="metric"><span>Recompensă / risc net</span><strong id="rrOut">—</strong></div>
 </div>
+<section class="compare-box" aria-labelledby="compareTitle"><h3 id="compareTitle">Comparație automată LONG vs SHORT</h3><p id="compareSummary" class="hint">Ambele sensuri vor fi calculate separat. Raportul mai mare nu câștigă dacă structura nu confirmă direcția.</p><div class="table-scroll"><table class="direction-table"><thead><tr><th>Sens</th><th>Trend</th><th>Intrare / SL / TP</th><th>Risc / potențial</th><th>R:R brut</th><th>R:R net</th><th>Verdict</th></tr></thead><tbody id="directionRows"><tr><td colspan="7">Așteaptă analiza.</td></tr></tbody></table></div></section>
 <p id="activation" class="notice">Nicio intrare imediată presupusă.</p>
 <ul id="reasons" class="reasons"></ul>
 <p id="blockers" class="notice">O recomandare tehnică nu este o probabilitate de profit.</p>
@@ -102,12 +103,12 @@
 <p id="actionStatus" class="hint" role="status"></p>
 </section>
 <section class="card method"><h2>Cum ia decizia</h2>
-<ol><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte.</li><li>LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul. Semnale amestecate → FĂRĂ SETUP.</li><li>Propune intrarea după depășirea extremului relevant, închidere de lumânare și retest. SL este dincolo de swing-ul de invalidare, cu tampon maxim dintre 2 ticks și 0,25 ATR(14).</li><li>TP folosește primul pivot istoric dincolo de intrare. Dacă lipsește, arată o proiecție 161,8% separată, neconfirmată. Nu mută SL sau TP pentru a forța 2:1.</li></ol>
+<ol><li>Construiește separat un plan LONG și unul SHORT din aceleași lumânări.</li><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte. LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul.</li><li>Pentru fiecare sens calculează intrarea, SL la invalidare, primul TP tehnic, distanța de risc, potențialul și R:R brut/net. O țintă aflată pe partea greșită este eliminată.</li><li>Alege numai direcția care trece filtrul de trend și are țintă validă. Un R:R mai mare pe sensul opus nu transformă automat un scenariu contra-trend într-o recomandare.</li></ol>
 <p class="hint">RSI(14), ATR(14) Wilder și MACD(12,26,9) sunt context, nu procente de reușită. Nu se deduc volum real, VWAP, știri sau lichiditate din pixelii fotografiei. O singură poză nu confirmă celelalte intervale temporale.</p>
 <p class="hint">Datele din fotografii sunt aproximative. Lumânările goale, alte culori, indicatorii suprapuși și scalele decupate pot împiedica citirea. Citirea opțională a cifrelor descarcă OCR din CDN și rulează local. Nu introduce chei API; pozele și datele financiare nu sunt salvate pe server.</p>
 </section>
 </aside>
 </div>
-<footer>TP/SL Studio · 3.2.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
+<footer>TP/SL Studio · 3.3.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
 </main>
 </body></html>

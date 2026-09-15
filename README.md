@@ -1,8 +1,8 @@
-# TP/SL Studio v3.2
+# TP/SL Studio v3.3
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
 
-Versiunea 3.2 păstrează reconcilierea temporală din 3.1, interpretează corect separatorul de mii al indicilor (de exemplu `55,000` la US30) și leagă analiza de intervalul fotografiei active. Când sunt detectate mai multe intervale, alege automat graficul lizibil al celui mai scurt interval; atingerea altei fotografii recalculează analiza pe intervalul ei.
+Versiunea 3.3 calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
 
 ## Utilizare rapidă
 
@@ -11,7 +11,7 @@ Versiunea 3.2 păstrează reconcilierea temporală din 3.1, interpretează corec
 3. Verifică tabelul de reconciliere. Aplicația compară valorile repetate, arată intervalele observate și marchează contradicțiile; nu aprobă automat datele.
 4. Controlează marcajele lumânărilor și reperele A/B. A/B sunt două prețuri de pe axă, nu swing high/low. Dacă citirea automată eșuează, selectează manual panoul și axa.
 5. Confirmă instrumentul, intervalul, tick-ul, data/fusul și faptul că toate lumânările/umbrele sunt corecte. Ultima lumânare este exclusă implicit dacă nu este închisă.
-6. Aplicația generează automat una dintre variante: **BUY LONG condiționat**, **SELL SHORT condiționat** sau **FĂRĂ SETUP**. Nu există selector manual pentru direcție.
+6. Aplicația generează ambele variante, le afișează într-un tabel comparativ și alege automat una dintre: **BUY LONG condiționat**, **SELL SHORT condiționat** sau **FĂRĂ SETUP**. Nu există selector manual pentru direcție.
 7. Pentru simularea lotajului completează și confirmă datele lipsă: equity, volum minim/pas, slippage, calendarul evenimentelor și statutul tuturor pozițiilor.
 
 Fotografiile pot furniza automat, când sunt lizibile: instrument, interval, preț curent, bid/ask, volum, marjă, fonduri libere, spread, comision, valoarea contractului, swap, valoarea pipului, starea pieței și indicii unei poziții existente. Equity dedus ca „fonduri libere + marjă” este doar informativ și nu este introdus automat.
@@ -20,11 +20,12 @@ Fotografiile pot furniza automat, când sunt lizibile: instrument, interval, pre
 
 - Sunt necesare minimum 35 de lumânări închise; de la 50 în sus se folosește și alinierea EMA20/EMA50.
 - Pivotul este strict mai înalt sau mai jos decât câte două lumânări vecine de fiecare parte, fără folosirea datelor viitoare.
-- LONG: ultimele două maxime și minime cresc, EMA20 urcă, prețul este peste EMA20 și, când există suficient istoric, EMA20 este peste EMA50. SHORT este invers. Diferența structurii trebuie să depășească 0,06 ATR.
+- Pentru ambele sensuri se calculează un plan ipotetic. LONG: ultimele două maxime și minime cresc, EMA20 urcă, prețul este peste EMA20 și, când există suficient istoric, EMA20 este peste EMA50. SHORT este invers. Diferența structurii trebuie să depășească 0,06 ATR.
 - Indicatorii sunt calculați reproductibil: EMA inițializată cu SMA, ATR14 și RSI14 Wilder, MACD 12/26/9.
 - Intrarea este condiționată de depășirea nivelului tehnic cu un tick, o lumânare închisă și un retest menținut.
 - SL este dincolo de ultimul swing care invalidează structura, cu tampon `max(2 ticks, 0,25 × ATR)`.
-- TP este primul pivot istoric relevant, cu un tick înainte. Dacă nu există pivot, se arată o proiecție Fibonacci 161,8% drept țintă neconfirmată. Aplicația nu mută artificial SL sau TP ca să forțeze 2:1.
+- TP este primul pivot istoric relevant, cu un tick înainte. Dacă nu există pivot, se poate arăta o proiecție Fibonacci 161,8% drept țintă neconfirmată, dar numai dacă se află dincolo de intrare în direcția tranzacției. Aplicația nu mută artificial SL sau TP ca să forțeze 2:1.
+- R:R mai mare nu este suficient: sensul trebuie să treacă filtrul de trend. Distanța mai mică până la SL nu înseamnă automat risc monetar mai mic; acesta depinde de lotaj și costuri.
 
 ## Reconcilierea celor trei capturi
 
