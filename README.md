@@ -1,6 +1,8 @@
-# TP/SL Studio v3
+# TP/SL Studio v3.1
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
+
+Versiunea 3.1 normalizează orele explicite de pe grafic la fusul dispozitivului, folosește cea mai recentă cotație coerentă și tratează diferențele dintre capturi succesive drept mișcare normală de piață. Valorile statice rămân verificate strict, iar citirile OCR incompatibile sunt ignorate și semnalate, nu mediate.
 
 ## Utilizare rapidă
 
