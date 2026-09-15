@@ -1,4 +1,4 @@
-/* TP/SL Studio v3.5 — bilateral and multi-timeframe analysis; no orders or market feed. */
+/* TP/SL Studio v3.6 — multi-timeframe analysis with a 2–3 hour forecast window. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TP=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -93,6 +93,7 @@ function evaluate(plan,direction,opts){
  return {riskLot,rewardLot,rr,costPrice,requiredTP,sizes,tp,riskDistance:riskDist,rewardDistance:tp==null?null:sign*(tp-entry),dailyRemaining};
 }
 function wilson(success,total,z=1.95996398454){if(!Number.isInteger(success)||!Number.isInteger(total)||total<=0||success<0||success>total)return null;const p=success/total,z2=z*z,den=1+z2/total,center=(p+z2/(2*total))/den,margin=z*Math.sqrt((p*(1-p)+z2/(4*total))/total)/den;return {low:Math.max(0,center-margin),high:Math.min(1,center+margin)};}
+function forecastWindow(timeframe){const minutes=timeframeMinutes[timeframe];if(!minutes||minutes>60)return {eligible:false,timeframe,minBars:null,maxBars:null,horizonBars:null,hours:[2,3],reason:'Intervalul '+(timeframe||'necunoscut')+' este prea mare pentru o prognoză de 2–3 ore; folosește M15, M30 sau H1 pentru execuție.'};const minBars=Math.ceil(120/minutes),maxBars=Math.floor(180/minutes);return {eligible:maxBars>=2,timeframe,minBars,maxBars,horizonBars:maxBars,hours:[2,3],reason:'Scenariul este urmărit '+minBars+'–'+maxBars+' lumânări ('+(minBars*minutes/60)+'–'+(maxBars*minutes/60)+' ore).'};}
 function backtest(input,opts={}){
  const tick=opts.tick,horizon=Math.max(1,Math.floor(opts.horizon||12)),wanted=opts.direction;
  if(!finite(tick)||tick<=0)return {sufficient:false,reason:'Lipsește tick-ul verificat.'};
@@ -117,5 +118,5 @@ function mapPrice(y,a,b,log=false){if(!a||!b||![a.y,a.price,b.y,b.price,y].every
 function calibrate(raw,a,b,log=false){return raw.map(v=>({open:mapPrice(v.openY,a,b,log),high:mapPrice(v.highY,a,b,log),low:mapPrice(v.lowY,a,b,log),close:mapPrice(v.closeY,a,b,log),x:v.x}));}
 function parseCSV(text){const lines=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(s=>s.trim());if(lines.length<2)throw Error('CSV gol.');const sep=lines[0].includes(';')?';':',',split=s=>s.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')),heads=split(lines[0]).map(s=>s.toLowerCase()),keys=['open','high','low','close'],ix=keys.map(k=>heads.indexOf(k));if(ix.some(i=>i<0))throw Error('CSV necesită coloanele open, high, low, close. Ordine cronologică vechi → nou.');const timeI=heads.findIndex(h=>['time','date','timestamp'].includes(h));let previous=-Infinity;return lines.slice(1).map(line=>{const cells=split(line),b={};keys.forEach((k,j)=>b[k]=num(cells[ix[j]]));if(timeI>=0){const s=cells[timeI],t=/^\d+$/.test(s)?Number(s):Date.parse(s);if(!finite(t)||t<=previous)throw Error('Timestampurile trebuie să fie valide, unice și crescătoare.');previous=t;b.time=s;}return b;});}
 function demo(kind='LONG',length=140){const bars=[];for(let i=0;i<length;i++){const base=100+(kind==='LONG'?i*.11:kind==='SHORT'?-i*.11:0)+Math.sin(i*.43)*1.15,open=base+Math.sin(i*1.7)*.12,close=base+Math.cos(i*1.3)*.17;bars.push({open,close,high:Math.max(open,close)+.28,low:Math.min(open,close)-.28});}return bars;}
-return {num,round,validate,ema,atr,rsi,pivots,indicators,trendEvidence,directionalPlan,analyze,combineTimeframes,timeframeMinutes,payoff,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
+return {num,round,validate,ema,atr,rsi,pivots,indicators,trendEvidence,directionalPlan,analyze,combineTimeframes,timeframeMinutes,forecastWindow,payoff,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
 });
