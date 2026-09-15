@@ -23,15 +23,15 @@ function detect(image,region){
  const bottoms=new Map();raw.forEach(r=>{const k=Math.round(r.lowY/3);bottoms.set(k,(bottoms.get(k)||0)+1);});if(Math.max(...bottoms.values())>raw.length*.45)throw Error('Selecția pare să conțină bare de volum. Selectează doar panoul cu lumânări.');
  return {candles:raw,count:raw.length,medianWidth:median(widths),medianSpacing:gap,warnings:bad.length?['Există neregularități de spațiere; verifică fiecare marcaj.']:[]};
 }
-function parseLabel(s){s=String(s).replace(/\s/g,'').replace(/[^\d.,-]/g,'');if(!s)return NaN;if(s.includes(',')&&s.includes('.')){const comma=s.lastIndexOf(',')>s.lastIndexOf('.');s=comma?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');}else s=s.replace(',','.');const n=Number(s);return finite(n)&&n>0?n:NaN;}
+function parseLabel(s,symbol){const n=marketNumber(s,symbol);return finite(n)&&n>0?n:NaN;}
 function fitAxis(labels,log=false){
  const pts=labels.filter(p=>finite(p.price)&&p.price>0&&finite(p.y)).sort((a,b)=>a.y-b.y);let best=null;
  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j];if(b.y-a.y<30||a.price<=b.price)continue;const v=p=>log?Math.log(p.price):p.price,slope=(v(b)-v(a))/(b.y-a.y),intercept=v(a)-slope*a.y,inliers=pts.filter(p=>Math.abs(p.y-(v(p)-intercept)/slope)<7);if(inliers.length<3)continue;const span=inliers.at(-1).y-inliers[0].y;if(!best||inliers.length>best.n||(inliers.length===best.n&&span>best.span))best={a:inliers[0],b:inliers.at(-1),n:inliers.length,span,points:inliers};}
  if(!best)throw Error('Nu am identificat trei prețuri coerente pe axă. Folosește reperele A și B.');return best;
 }
 function words(data){const out=[];for(const block of data?.blocks||[])for(const para of block.paragraphs||[])for(const line of para.lines||[])for(const word of line.words||[])out.push({text:word.text,confidence:word.confidence??0,x:(word.bbox.x0+word.bbox.x1)/2,y:(word.bbox.y0+word.bbox.y1)/2,bbox:word.bbox});return out;}
-function findAxis(input,width,height,log=false){
- const all=Array.isArray(input)?input:words(input),candidates=all.filter(w=>w.x>width*.52&&w.confidence>=35&&/^[~≈]?\s*\d{1,6}(?:[.,]\d{1,4})?$/.test(w.text.trim())).map(w=>({...w,price:parseLabel(w.text)})).filter(w=>finite(w.price));let best=null,tol=Math.max(20,width*.035);
+function findAxis(input,width,height,log=false,symbol=null){
+ const all=Array.isArray(input)?input:words(input),candidates=all.filter(w=>w.x>width*.52&&w.confidence>=35&&/^[~≈]?\s*\d{1,6}(?:[.,]\d{1,4})?$/.test(w.text.trim())).map(w=>({...w,price:parseLabel(w.text,symbol)})).filter(w=>finite(w.price));let best=null,tol=Math.max(20,width*.035);
  for(const seed of candidates){const group=candidates.filter(w=>Math.abs(w.x-seed.x)<=tol);try{const fit=fitAxis(group,log),x=median(fit.points.map(p=>p.x)),score=fit.n*100+fit.span/height*70+x/width*10;if(!best||score>best.score)best={...fit,x,score};}catch(_){}}
  if(!best)throw Error('Axa prețului nu a putut fi citită automat.');return best;
 }
@@ -41,7 +41,8 @@ function number(s){if(s==null)return null;let v=String(s).trim().replace(/\s/g,'
 function one(t,re,group=1){const m=t.match(re);return m?number(m[group]):null;}
 const priceToken='(?:\\d{1,3}(?:[ .]\\d{3})+(?:[.,]\\d+)?|\\d{1,7}(?:[.,]\\d{1,8})?)';
 function indexLike(symbol){return /^(?:US30|US100|US500|DE40|JP225|UK100|FRA40|EU50|SPA35|W20)$/i.test(symbol||'');}
-function marketNumber(s,symbol){if(s==null)return null;let v=String(s).trim().replace(/\s/g,'');if(indexLike(symbol)){if(/^\d{1,3}(?:[.,]\d{3})+$/.test(v))v=v.replace(/[.,]/g,'');else if(/^\d{4,7}$/.test(v)){}else v=v.replace(',','.');}else if(v.includes(',')&&v.includes('.'))v=v.lastIndexOf(',')>v.lastIndexOf('.')?v.replace(/\./g,'').replace(',','.'):v.replace(/,/g,'');else v=v.replace(',','.');const n=Number(v);return finite(n)?n:null;}
+function groupedPriceLike(symbol){return indexLike(symbol)||/^(?:BITCOIN|BTCUSD|BTC|GOLD|XAUUSD)$/i.test(symbol||'');}
+function marketNumber(s,symbol){if(s==null)return null;let v=String(s).trim().replace(/\s/g,'');if(groupedPriceLike(symbol)){if(/^\d{1,3}(?:[.,]\d{3})+$/.test(v))v=v.replace(/[.,]/g,'');else if(/^\d{4,7}$/.test(v)){}else if(v.includes(',')&&v.includes('.'))v=v.lastIndexOf(',')>v.lastIndexOf('.')?v.replace(/\./g,'').replace(',','.'):v.replace(/,/g,'');else v=v.replace(',','.');}else if(v.includes(',')&&v.includes('.'))v=v.lastIndexOf(',')>v.lastIndexOf('.')?v.replace(/\./g,'').replace(',','.'):v.replace(/,/g,'');else v=v.replace(',','.');const n=Number(v);return finite(n)?n:null;}
 function priceDecimals(raw,symbol){if(raw==null)return null;const v=String(raw).trim().replace(/\s/g,'');if(indexLike(symbol)&&(/^\d{1,3}(?:[.,]\d{3})+$/.test(v)||/^\d{4,7}$/.test(v)))return 0;const m=v.match(/[.,](\d+)$/);return m?m[1].length:0;}
 function clockData(t){const out=[];for(const m of t.matchAll(/\b([0-2]?\d):([0-5]\d)(?::([0-5]\d))?\s*(?:UTC\s*([+-]\d{1,2})(?::?(\d{2}))?)?/ig)){const h=Number(m[1]),minute=Number(m[2]);if(h>23)continue;const oh=m[4]==null?null:Number(m[4]),om=m[5]==null?0:Number(m[5]),offset=oh==null?null:oh*60+Math.sign(oh||1)*om;out.push({value:String(h).padStart(2,'0')+':'+m[2],minutes:h*60+minute,offsetMinutes:offset,explicitOffset:offset!=null});}return out;}
 function exactLinePrice(line,symbol){const clean=line.replace(/\bUSD\b/ig,'').replace(/[_-]+$/,'').trim(),m=clean.match(new RegExp('^('+priceToken+')$'));if(!m)return null;const value=marketNumber(m[1],symbol);if(indexLike(symbol)&&value<1000)return null;return {raw:m[1],value};}
@@ -84,5 +85,6 @@ function reconcile(scans,options={}){
  if(result.derived.captureSpanMinutes>15)result.warnings.push('Capturile acoperă peste 15 minute; datele de piață pot fi deja depășite.');for(const s of scans)for(const x of s.ignored||[])result.warnings.push(x.field+': valoare OCR ignorată ('+x.reason+').');
  const expected=['symbol','timeframe','current','volume','marginRon','freeMarginRon','spreadPrice','commissionRon','contractUsd','contractRon','market'];const found=expected.filter(k=>f[k]).length;result.score=Math.max(0,Math.round(found/expected.length*100-result.conflicts.length*4));return result;
 }
-return {detect,fitAxis,findAxis,inferRegion,parseLabel,parseXtb,reconcile,words,normalize,median,color,marketNumber};
+function chooseChart(photos,targetTimeframe){const all=(photos||[]).map((p,i)=>({i,n:p?.raw?.length||p?.candles||0,timeframe:p?.scan?.timeframe||p?.timeframe||null})).filter(x=>x.n>=36),preferred=all.filter(x=>x.timeframe===targetTimeframe),pool=preferred.length?preferred:all;return pool.sort((a,b)=>b.n-a.n||a.i-b.i)[0]?.i??-1;}
+return {detect,fitAxis,findAxis,inferRegion,parseLabel,parseXtb,reconcile,chooseChart,words,normalize,median,color,marketNumber};
 });

@@ -56,4 +56,4 @@ jobs:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           curl --fail --retry 5 --retry-all-errors --retry-delay 4 "$SITE_URL?version=$GITHUB_SHA" -o /tmp/tpsl-live.html
-          node -e "const fs=require('fs');if(!fs.readFileSync('/tmp/tpsl-live.html','utf8').includes('3.1.0'))process.exit(1)"
+          node -e "const fs=require('fs');if(!fs.readFileSync('/tmp/tpsl-live.html','utf8').includes('3.2.0'))process.exit(1)"

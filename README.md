@@ -1,8 +1,8 @@
-# TP/SL Studio v3.1
+# TP/SL Studio v3.2
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
 
-Versiunea 3.1 normalizează orele explicite de pe grafic la fusul dispozitivului, folosește cea mai recentă cotație coerentă și tratează diferențele dintre capturi succesive drept mișcare normală de piață. Valorile statice rămân verificate strict, iar citirile OCR incompatibile sunt ignorate și semnalate, nu mediate.
+Versiunea 3.2 păstrează reconcilierea temporală din 3.1, interpretează corect separatorul de mii al indicilor (de exemplu `55,000` la US30) și leagă analiza de intervalul fotografiei active. Când sunt detectate mai multe intervale, alege automat graficul lizibil al celui mai scurt interval; atingerea altei fotografii recalculează analiza pe intervalul ei.
 
 ## Utilizare rapidă
 
