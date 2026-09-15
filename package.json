@@ -1,8 +1,8 @@
 {
   "name": "tp-sl-studio",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "private": true,
-  "description": "Static Romanian 3-screenshot chart, TP/SL and risk study; no order execution",
+  "description": "Static Romanian 1–6 screenshot multi-timeframe TP/SL and risk study; no order execution",
   "scripts": {
     "test": "node tests/core.cjs && node tests/browser.cjs"
   },

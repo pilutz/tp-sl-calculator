@@ -2,11 +2,11 @@
 <html lang="ro">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220">
 <title>TP/SL Studio · Analiză automată</title>
-<link rel="stylesheet" href="./styles.css?v=3.4.0">
-<script defer src="./engine.js?v=3.4.0"></script><script defer src="./vision.js?v=3.4.0"></script><script defer src="./app.js?v=3.4.0"></script>
+<link rel="stylesheet" href="./styles.css?v=3.5.0">
+<script defer src="./engine.js?v=3.5.0"></script><script defer src="./vision.js?v=3.5.0"></script><script defer src="./app.js?v=3.5.0"></script>
 </head>
 <body>
-<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.4 · TP tehnic sau 2R matematic</span></header>
+<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.5 · analiză M15/H1/H4/D1</span></header>
 <main>
 <section class="intro"><p class="eyebrow">DE LA GRAFIC LA UN PLAN EXPLICAT</p><h1>Direcția se citește.<br><span>Riscul se calculează.</span></h1><p>Încarcă lumânările. Aplicația propune <strong>BUY LONG</strong>, <strong>SELL SHORT</strong> sau <strong>FĂRĂ SETUP</strong> și explică fiecare nivel.</p><div class="pills"><span>Fără cont</span><span>Poza rămâne în browser</span><span>Nu plasează ordine</span></div></section>
 <div class="layout">
@@ -14,7 +14,7 @@
 <section class="card">
 <div class="section-title"><span class="step">01</span><h2>Graficul tău</h2></div>
 <div class="grid"><label>Instrument<input id="symbol" placeholder="Ex. OIL / GOLD / USDIDX" maxlength="40"></label><label>O lumânare reprezintă<select id="timeframe"><option value="">Alege intervalul</option><option>M15</option><option>H1</option><option>H4</option><option>D1</option><option>Alt interval</option></select></label></div>
-<div class="upload"><label for="imageInput">Adaugă 1–3 capturi din aceeași situație XTB</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Ideal: ① grafic pe ecran complet, ② ordin cu BUY/SELL, volum și marjă, ③ detalii extinse cu spread, contract, swap și valoare pip. Maximum 15 MB/poză.</small></div>
+<div class="upload"><label for="imageInput">Adaugă între 1 și 6 capturi din aceeași situație XTB</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Recomandat: grafic M15 detaliat, M15 mai larg, H1, H4, D1 și o captură cu ordinul/detaliile contractului. Aplicația analizează fiecare grafic lizibil. Maximum 15 MB/poză.</small></div>
 <div id="photoList" class="photo-list" aria-live="polite"></div>
 <button id="scanAllBtn" class="primary wide" type="button">Preia automat datele din toate fotografiile <span>→</span></button>
 <div id="extractedWrap" hidden>
@@ -86,6 +86,7 @@
 <div class="metric"><span>Take Profit · reper</span><strong id="tpOut">—</strong><small id="tpKind">—</small></div>
 <div class="metric"><span>Recompensă / risc net</span><strong id="rrOut">—</strong></div>
 </div>
+<section id="multiTfBox" class="multi-box" hidden aria-labelledby="multiTfTitle"><h3 id="multiTfTitle">Analiză pe toate intervalele</h3><p id="multiTfSummary" class="hint"></p><div class="table-scroll"><table class="multi-table"><thead><tr><th>Sursă</th><th>Interval</th><th>Lumânări</th><th>Direcție</th><th>Rol</th><th>Observație</th></tr></thead><tbody id="multiTfRows"></tbody></table></div></section>
 <section class="compare-box" aria-labelledby="compareTitle"><h3 id="compareTitle">Comparație automată LONG vs SHORT</h3><p id="compareSummary" class="hint">Ambele sensuri vor fi calculate separat. Raportul mai mare nu câștigă dacă structura nu confirmă direcția.</p><div class="table-scroll"><table class="direction-table"><thead><tr><th>Sens</th><th>Trend</th><th>Intrare / SL / TP</th><th>Risc / potențial</th><th>R:R brut</th><th>R:R net</th><th>Verdict</th></tr></thead><tbody id="directionRows"><tr><td colspan="7">Așteaptă analiza.</td></tr></tbody></table></div></section>
 <p id="activation" class="notice">Nicio intrare imediată presupusă.</p>
 <ul id="reasons" class="reasons"></ul>
@@ -103,12 +104,12 @@
 <p id="actionStatus" class="hint" role="status"></p>
 </section>
 <section class="card method"><h2>Cum ia decizia</h2>
-<ol><li>Construiește separat un plan LONG și unul SHORT din aceleași lumânări.</li><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte. LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul.</li><li>Pentru fiecare sens calculează intrarea, SL la invalidare, primul TP tehnic, distanța de risc, potențialul și R:R brut/net. O țintă aflată pe partea greșită este eliminată.</li><li>Alege numai direcția care trece filtrul de trend și are țintă validă. Un R:R mai mare pe sensul opus nu transformă automat un scenariu contra-trend într-o recomandare.</li></ol>
-<p class="hint">RSI(14), ATR(14) Wilder și MACD(12,26,9) sunt context, nu procente de reușită. Nu se deduc volum real, VWAP, știri sau lichiditate din pixelii fotografiei. O singură poză nu confirmă celelalte intervale temporale.</p>
+<ol><li>Analizează separat toate graficele lizibile și alege intervalul cel mai scurt drept interval de execuție.</li><li>Construiește separat un plan LONG și unul SHORT pe intervalul de execuție.</li><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte. LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul.</li><li>Folosește H1/H4/D1 drept context: acordul întărește scenariul, conflictul îl blochează, iar un pivot superior poate deveni TP tehnic.</li><li>Pentru fiecare sens calculează intrarea, SL la invalidare, primul TP tehnic și R:R brut/net. Un R:R mai mare pe sensul opus nu transformă automat un scenariu contra-trend într-o recomandare.</li></ol>
+<p class="hint">M15 stabilește de regulă activarea și SL; H1/H4/D1 sunt folosite pentru direcție și suporturi/rezistențe. Nivelurile nu sunt copiate orbește între intervale. RSI(14), ATR(14) Wilder și MACD(12,26,9) sunt context, nu procente de reușită.</p>
 <p class="hint">Datele din fotografii sunt aproximative. Lumânările goale, alte culori, indicatorii suprapuși și scalele decupate pot împiedica citirea. Citirea opțională a cifrelor descarcă OCR din CDN și rulează local. Nu introduce chei API; pozele și datele financiare nu sunt salvate pe server.</p>
 </section>
 </aside>
 </div>
-<footer>TP/SL Studio · 3.4.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
+<footer>TP/SL Studio · 3.5.0 · Analiza este valabilă pentru datele încărcate. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
 </main>
 </body></html>

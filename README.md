@@ -1,12 +1,12 @@
-# TP/SL Studio v3.4
+# TP/SL Studio v3.5
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
 
-Versiunea 3.4 calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. Dacă fotografia nu conține un pivot tehnic dincolo de intrare, afișează și pragul matematic pentru 2R, dar îl marchează clar drept neconfirmat și păstrează verdictul „FĂRĂ SETUP COMPLET”. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
+Versiunea 3.5 acceptă între una și șase fotografii, analizează separat fiecare grafic M15/H1/H4/D1 și calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. Dacă fotografia nu conține un pivot tehnic dincolo de intrare, afișează și pragul matematic pentru 2R, dar îl marchează clar drept neconfirmat și păstrează verdictul „FĂRĂ SETUP COMPLET”. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
 
 ## Utilizare rapidă
 
-1. Selectează simultan una până la trei capturi din aceeași situație: ideal graficul mărit, formularul ordinului și detaliile contractului.
+1. Selectează simultan una până la șase capturi din aceeași situație: recomandat M15 detaliat, M15 mai larg, H1, H4, D1 și ordinul/detaliile contractului.
 2. Apasă **Preia automat datele din toate fotografiile**. Citirea OCR și detectorul lumânărilor rulează local în browser.
 3. Verifică tabelul de reconciliere. Aplicația compară valorile repetate, arată intervalele observate și marchează contradicțiile; nu aprobă automat datele.
 4. Controlează marcajele lumânărilor și reperele A/B. A/B sunt două prețuri de pe axă, nu swing high/low. Dacă citirea automată eșuează, selectează manual panoul și axa.
@@ -27,7 +27,7 @@ Fotografiile pot furniza automat, când sunt lizibile: instrument, interval, pre
 - TP este primul pivot istoric relevant, cu un tick înainte. Dacă nu există pivot, se poate arăta o proiecție Fibonacci 161,8% drept țintă neconfirmată, dar numai dacă se află dincolo de intrare în direcția tranzacției. Aplicația nu mută artificial SL sau TP ca să forțeze 2:1.
 - R:R mai mare nu este suficient: sensul trebuie să treacă filtrul de trend. Distanța mai mică până la SL nu înseamnă automat risc monetar mai mic; acesta depinde de lotaj și costuri.
 
-## Reconcilierea celor trei capturi
+## Reconcilierea celor 1–6 capturi
 
 Valorile apropiate sunt agregate în limite explicite; discrepanțele materiale rămân vizibile. Se calculează doar relații verificabile:
 
@@ -78,6 +78,6 @@ npx playwright install chromium
 npm test
 ```
 
-GitHub Actions rulează testele de calcul și scenariile complete de browser înainte de publicare. Sunt testate trend/range, indicatori, TP/SL, costuri, marjă, rotunjire, invalidări, CSV, backtest cronologic, interval Wilson, imagini sintetice cu OHLC cunoscut, trei capturi OCR simulate, reconciliere, poziție existentă, export și layout mobil.
+GitHub Actions rulează testele de calcul și scenariile complete de browser înainte de publicare. Sunt testate trend/range, analiza multi-timeframe cu șase surse, conflictele dintre intervale, indicatori, TP/SL, costuri, marjă, rotunjire, invalidări, CSV, backtest cronologic, interval Wilson, imagini sintetice cu OHLC cunoscut, capturi OCR simulate, reconciliere, poziție existentă, export și layout mobil.
 
 Acuratețea OCR pe orice fotografie reală nu este garantată; confirmarea vizuală rămâne obligatorie. Coeficienții swing/ATR și regulile statistice sunt reguli ale aplicației, nu reguli XTB.
