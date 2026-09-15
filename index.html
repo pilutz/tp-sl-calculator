@@ -2,19 +2,19 @@
 <html lang="ro">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220">
 <title>TP/SL Studio · Analiză automată</title>
-<link rel="stylesheet" href="./styles.css?v=3.6.0">
-<script defer src="./engine.js?v=3.6.0"></script><script defer src="./vision.js?v=3.6.0"></script><script defer src="./app.js?v=3.6.0"></script>
+<link rel="stylesheet" href="./styles.css?v=3.6.1">
+<script defer src="./engine.js?v=3.6.1"></script><script defer src="./vision.js?v=3.6.1"></script><script defer src="./app.js?v=3.6.1"></script>
 </head>
 <body>
-<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.6 · prognoză 2–3 ore</span></header>
+<header><a class="brand" href="./"><span class="logo">↗</span> TP/SL <b>STUDIO</b></a><span class="version">v3.6.1 · prognoză 2–3 ore</span></header>
 <main>
 <section class="intro"><p class="eyebrow">DE LA GRAFIC LA UN PLAN EXPLICAT</p><h1>Direcția se citește.<br><span>Riscul se calculează.</span></h1><p>Încarcă lumânările. Aplicația propune <strong>BUY LONG</strong>, <strong>SELL SHORT</strong> sau <strong>FĂRĂ SETUP</strong> și explică fiecare nivel.</p><div class="pills"><span>Fără cont</span><span>Poza rămâne în browser</span><span>Nu plasează ordine</span></div></section>
 <div class="layout">
 <div class="workspace">
 <section class="card">
 <div class="section-title"><span class="step">01</span><h2>Graficul tău</h2></div>
-<div class="grid"><label>Instrument<input id="symbol" placeholder="Ex. OIL / GOLD / USDIDX" maxlength="40"></label><label>O lumânare reprezintă<select id="timeframe"><option value="">Alege intervalul</option><option>M15</option><option>H1</option><option>H4</option><option>D1</option><option>Alt interval</option></select></label></div>
-<div class="upload"><label for="imageInput">Adaugă între 1 și 6 capturi din aceeași situație XTB</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Recomandat: grafic M15 detaliat, M15 mai larg, H1, H4, D1 și o captură cu ordinul/detaliile contractului. Aplicația analizează fiecare grafic lizibil. Maximum 15 MB/poză.</small></div>
+<div class="grid"><label>Instrument<input id="symbol" placeholder="Ex. OIL / GOLD / USDIDX" maxlength="40"></label><label>O lumânare reprezintă<select id="timeframe"><option value="">Alege intervalul</option><option value="M1">M1</option><option value="M5">M5</option><option value="M15">M15</option><option value="M30">M30</option><option value="H1">H1</option><option value="H4">H4</option><option value="D1">D1</option><option value="W1">W1</option><option value="Alt interval">Alt interval</option></select></label></div>
+<div class="upload"><label for="imageInput">Adaugă între 1 și 6 capturi din aceeași situație XTB</label><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple><small>Recomandat: M1/M5 pentru timing, M15 pentru scenariul de 2–3 ore, H1/H4/D1 pentru context și o captură cu ordinul/detaliile contractului. Aplicația analizează fiecare grafic lizibil. Maximum 15 MB/poză.</small></div>
 <div id="photoList" class="photo-list" aria-live="polite"></div>
 <button id="scanAllBtn" class="primary wide" type="button">Preia automat datele din toate fotografiile <span>→</span></button>
 <div id="extractedWrap" hidden>
@@ -104,12 +104,12 @@
 <p id="actionStatus" class="hint" role="status"></p>
 </section>
 <section class="card method"><h2>Cum ia decizia</h2>
-<ol><li>Analizează separat toate graficele lizibile și alege intervalul cel mai scurt drept interval de execuție.</li><li>Construiește separat un plan LONG și unul SHORT pe intervalul de execuție.</li><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte. LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul.</li><li>Folosește H1/H4/D1 drept context: acordul întărește scenariul, conflictul îl blochează, iar un pivot superior poate deveni TP tehnic.</li><li>Pentru fiecare sens calculează intrarea, SL la invalidare, primul TP tehnic și R:R brut/net. Un R:R mai mare pe sensul opus nu transformă automat un scenariu contra-trend într-o recomandare.</li></ol>
-<p class="hint">M15 stabilește de regulă activarea și SL; H1/H4/D1 sunt folosite pentru direcție și suporturi/rezistențe. Nivelurile nu sunt copiate orbește între intervale. RSI(14), ATR(14) Wilder și MACD(12,26,9) sunt context, nu procente de reușită.</p>
+<ol><li>Analizează separat toate graficele lizibile. Pentru orizontul de 2–3 ore preferă M15 ca interval principal; M1/M5 rafinează timingul, iar intervalele mai mari oferă context.</li><li>Construiește separat un plan LONG și unul SHORT pe intervalul principal.</li><li>Confirmă două swing high și două swing low cu câte două lumânări pe fiecare parte. LONG cere maxime/minime ascendente, preț peste EMA20, EMA20 peste EMA50 și pantă pozitivă. SHORT cere inversul.</li><li>Folosește H1/H4/D1 drept context: acordul întărește scenariul, conflictul îl blochează, iar un pivot superior poate deveni TP tehnic.</li><li>Pentru fiecare sens calculează intrarea, SL la invalidare, primul TP tehnic și R:R brut/net. Un R:R mai mare pe sensul opus nu transformă automat un scenariu contra-trend într-o recomandare.</li></ol>
+<p class="hint">Când există, M15 stabilește scenariul, activarea și SL pentru cele 2–3 ore. M1/M5 sunt afișate ca timing; H1/H4/D1 sunt folosite pentru direcție și suporturi/rezistențe. Nivelurile nu sunt copiate orbește între intervale. RSI(14), ATR(14) Wilder și MACD(12,26,9) sunt context, nu procente de reușită.</p>
 <p class="hint">Datele din fotografii sunt aproximative. Lumânările goale, alte culori, indicatorii suprapuși și scalele decupate pot împiedica citirea. Citirea opțională a cifrelor descarcă OCR din CDN și rulează local. Nu introduce chei API; pozele și datele financiare nu sunt salvate pe server.</p>
 </section>
 </aside>
 </div>
-<footer>TP/SL Studio · 3.6.0 · Orizontul planului este de 2–3 ore. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
+<footer>TP/SL Studio · 3.6.1 · Orizontul planului este de 2–3 ore. Recalculează la o lumânare nouă sau o schimbare de context.</footer>
 </main>
 </body></html>

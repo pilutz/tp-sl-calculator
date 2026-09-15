@@ -1,4 +1,4 @@
-/* TP/SL Studio v3.6 — multi-timeframe analysis with a 2–3 hour forecast window. */
+/* TP/SL Studio v3.6.1 — multi-timeframe analysis with a 2–3 hour forecast window. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TP=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -61,14 +61,19 @@ function analyze(input,opts={}){
  return base;
 }
 const timeframeMinutes={M1:1,M5:5,M15:15,M30:30,H1:60,H4:240,D1:1440,W1:10080};
+function selectExecutionTimeframe(values){
+ const available=new Set((values||[]).map(x=>typeof x==='string'?x:x?.timeframe).filter(x=>timeframeMinutes[x]));
+ for(const timeframe of ['M15','M30','H1','M5','M1'])if(available.has(timeframe))return timeframe;
+ return [...available].sort((a,b)=>timeframeMinutes[a]-timeframeMinutes[b])[0]||null;
+}
 function combineTimeframes(items){
  const valid=(items||[]).filter(x=>x&&x.result&&timeframeMinutes[x.timeframe]&&Array.isArray(x.result.bars)&&x.result.bars.length>=35).map(x=>({...x,minutes:timeframeMinutes[x.timeframe]}));
  if(!valid.length)return {execution:null,items:[],confirmations:[],conflicts:[],neutral:[],target:null,reason:'Niciun grafic calibrat cu minimum 35 de lumânări.'};
- const shortest=Math.min(...valid.map(x=>x.minutes)),execution=valid.filter(x=>x.minutes===shortest).sort((a,b)=>b.result.bars.length-a.result.bars.length||a.photo-b.photo)[0],direction=execution.result.direction;
+ const executionTimeframe=selectExecutionTimeframe(valid),execution=valid.filter(x=>x.timeframe===executionTimeframe).sort((a,b)=>b.result.bars.length-a.result.bars.length||a.photo-b.photo)[0],direction=execution.result.direction;
  const representatives=[];for(const tf of [...new Set(valid.map(x=>x.timeframe))])representatives.push(valid.filter(x=>x.timeframe===tf).sort((a,b)=>b.result.bars.length-a.result.bars.length||a.photo-b.photo)[0]);
- const higher=representatives.filter(x=>x.minutes>execution.minutes),confirmations=higher.filter(x=>x.result.direction===direction&&direction!=='NONE'),conflicts=higher.filter(x=>direction!=='NONE'&&x.result.direction!=='NONE'&&x.result.direction!==direction),neutral=higher.filter(x=>x.result.direction==='NONE');
+ const lower=representatives.filter(x=>x.minutes<execution.minutes),higher=representatives.filter(x=>x.minutes>execution.minutes),confirmations=higher.filter(x=>x.result.direction===direction&&direction!=='NONE'),conflicts=higher.filter(x=>direction!=='NONE'&&x.result.direction!=='NONE'&&x.result.direction!==direction),neutral=higher.filter(x=>x.result.direction==='NONE');
  let target=null;if(direction!=='NONE'&&execution.result.plan){const sign=direction==='LONG'?1:-1,entry=execution.result.plan.entry,levels=[];for(const x of valid.filter(v=>v.minutes>execution.minutes)){const p=x.result.candidates?.[direction]?.plan;if(!p)continue;for(const [value,kind] of [[p.tp,'pivot'],[direction==='LONG'?p.swingHigh:p.swingLow,'extremă swing']])if(finite(value)&&sign*(value-entry)>0)levels.push({value,timeframe:x.timeframe,photo:x.photo,kind});}levels.sort((a,b)=>sign*(a.value-b.value)||a.photo-b.photo);target=levels[0]||null;}
- return {execution,items:valid,representatives,higher,confirmations,conflicts,neutral,target,direction,reason:conflicts.length?'Intervalele superioare confirmă direcția opusă.':confirmations.length?'Cel puțin un interval superior confirmă direcția de execuție.':higher.length?'Intervalele superioare sunt neutre sau nevalidate.':'Nu există încă un interval superior pentru confirmare.'};
+ return {execution,executionTimeframe,items:valid,representatives,lower,higher,confirmations,conflicts,neutral,target,direction,reason:conflicts.length?'Intervalele superioare confirmă direcția opusă.':confirmations.length?'Cel puțin un interval superior confirmă direcția de execuție.':higher.length?'Intervalele superioare sunt neutre sau nevalidate.':'Nu există încă un interval superior pentru confirmare.'};
 }
 function payoff(plan,direction,opts={}){
  if(!plan||!['LONG','SHORT'].includes(direction))return {error:'Lipsește un scenariu tehnic complet.'};
@@ -118,5 +123,5 @@ function mapPrice(y,a,b,log=false){if(!a||!b||![a.y,a.price,b.y,b.price,y].every
 function calibrate(raw,a,b,log=false){return raw.map(v=>({open:mapPrice(v.openY,a,b,log),high:mapPrice(v.highY,a,b,log),low:mapPrice(v.lowY,a,b,log),close:mapPrice(v.closeY,a,b,log),x:v.x}));}
 function parseCSV(text){const lines=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(s=>s.trim());if(lines.length<2)throw Error('CSV gol.');const sep=lines[0].includes(';')?';':',',split=s=>s.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')),heads=split(lines[0]).map(s=>s.toLowerCase()),keys=['open','high','low','close'],ix=keys.map(k=>heads.indexOf(k));if(ix.some(i=>i<0))throw Error('CSV necesită coloanele open, high, low, close. Ordine cronologică vechi → nou.');const timeI=heads.findIndex(h=>['time','date','timestamp'].includes(h));let previous=-Infinity;return lines.slice(1).map(line=>{const cells=split(line),b={};keys.forEach((k,j)=>b[k]=num(cells[ix[j]]));if(timeI>=0){const s=cells[timeI],t=/^\d+$/.test(s)?Number(s):Date.parse(s);if(!finite(t)||t<=previous)throw Error('Timestampurile trebuie să fie valide, unice și crescătoare.');previous=t;b.time=s;}return b;});}
 function demo(kind='LONG',length=140){const bars=[];for(let i=0;i<length;i++){const base=100+(kind==='LONG'?i*.11:kind==='SHORT'?-i*.11:0)+Math.sin(i*.43)*1.15,open=base+Math.sin(i*1.7)*.12,close=base+Math.cos(i*1.3)*.17;bars.push({open,close,high:Math.max(open,close)+.28,low:Math.min(open,close)-.28});}return bars;}
-return {num,round,validate,ema,atr,rsi,pivots,indicators,trendEvidence,directionalPlan,analyze,combineTimeframes,timeframeMinutes,forecastWindow,payoff,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
+return {num,round,validate,ema,atr,rsi,pivots,indicators,trendEvidence,directionalPlan,analyze,combineTimeframes,selectExecutionTimeframe,timeframeMinutes,forecastWindow,payoff,evaluate,wilson,backtest,mapPrice,calibrate,parseCSV,demo};
 });

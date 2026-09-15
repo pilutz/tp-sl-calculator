@@ -1,12 +1,12 @@
-# TP/SL Studio v3.6
+# TP/SL Studio v3.6.1
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
 
-Versiunea 3.6 acceptă între una și șase fotografii, analizează separat fiecare grafic M15/H1/H4/D1 și limitează fiecare propunere la următoarele 2–3 ore. M15 folosește 8–12 lumânări, M30 4–6, iar H1 2–3; H4 și D1 rămân context. Aplicația calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. Dacă fotografia nu conține un pivot tehnic dincolo de intrare, afișează și pragul matematic pentru 2R, dar îl marchează clar drept neconfirmat și păstrează verdictul „FĂRĂ SETUP COMPLET”. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
+Versiunea 3.6.1 acceptă între una și șase fotografii, inclusiv M1/M5/M15/M30/H1/H4/D1/W1, și limitează fiecare propunere la următoarele 2–3 ore. Când setul conține M15, acesta este intervalul principal al scenariului; M1/M5 rafinează timingul, iar H1/H4/D1 oferă context și niveluri tehnice. M15 folosește 8–12 lumânări, M30 4–6, iar H1 2–3. Aplicația calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. Dacă fotografia nu conține un pivot tehnic dincolo de intrare, afișează și pragul matematic pentru 2R, dar îl marchează clar drept neconfirmat și păstrează verdictul „FĂRĂ SETUP COMPLET”. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
 
 ## Utilizare rapidă
 
-1. Selectează simultan una până la șase capturi din aceeași situație: recomandat M15 detaliat, M15 mai larg, H1, H4, D1 și ordinul/detaliile contractului.
+1. Selectează simultan una până la șase capturi din aceeași situație: recomandat M1/M5 pentru timing, M15 pentru scenariul de 2–3 ore, H1/H4/D1 pentru context și ordinul/detaliile contractului.
 2. Apasă **Preia automat datele din toate fotografiile**. Citirea OCR și detectorul lumânărilor rulează local în browser.
 3. Verifică tabelul de reconciliere. Aplicația compară valorile repetate, arată intervalele observate și marchează contradicțiile; nu aprobă automat datele.
 4. Controlează marcajele lumânărilor și reperele A/B. A/B sunt două prețuri de pe axă, nu swing high/low. Dacă citirea automată eșuează, selectează manual panoul și axa.
