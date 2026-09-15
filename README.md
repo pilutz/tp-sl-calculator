@@ -1,8 +1,8 @@
-# TP/SL Studio v3.3
+# TP/SL Studio v3.4
 
 Aplicație statică: https://pilutz.github.io/tp-sl-calculator/
 
-Versiunea 3.3 calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
+Versiunea 3.4 calculează separat scenariile LONG și SHORT, compară intrarea, invalidarea, ținta, riscul, potențialul și R:R brut/net, apoi selectează numai sensul confirmat de structură. Elimină automat orice țintă aflată pe partea greșită a intrării. Dacă fotografia nu conține un pivot tehnic dincolo de intrare, afișează și pragul matematic pentru 2R, dar îl marchează clar drept neconfirmat și păstrează verdictul „FĂRĂ SETUP COMPLET”. De asemenea, citește prețul principal din geometria antetului și preferă timestampul explicit al graficului, pentru a nu confunda o etichetă a axei sau ora `09:00` cu ultima cotație.
 
 ## Utilizare rapidă
 
